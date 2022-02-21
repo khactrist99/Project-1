@@ -85,7 +85,7 @@ void displayFunc()
 
   matrix.SetMatrixMode(OpenGLMatrix::ModelView);
   matrix.LoadIdentity();
-  matrix.LookAt((width*heightOfImage)/2, scale*3, 0, (width*heightOfImage)/2, 0, (width*heightOfImage)/2, 0, 0, -1);
+  matrix.LookAt((width*heightOfImage)/2, scale*3, 0, (width*heightOfImage)/2.0, 0, -1*((width*heightOfImage)/2.0), 0, 0, -1);
 
   float m[16];
   matrix.SetMatrixMode(OpenGLMatrix::ModelView);
@@ -257,6 +257,17 @@ void keyboardFunc(unsigned char key, int x, int y)
   }
 }
 
+void addToVector(vector<float>& position, vector<float>& color, int i, int j) {
+    position.push_back((float)i);
+    position.push_back(scale * (float)heightmapImage->getPixel(i,j,0)/255.0);
+    position.push_back((float)j*-1.0);
+    //color
+    color.push_back((float)heightmapImage->getPixel(i,j,0)/255.0);
+    color.push_back((float)heightmapImage->getPixel(i,j,0)/255.0);
+    color.push_back((float)heightmapImage->getPixel(i,j,0)/255.0);
+    color.push_back(1.0f);
+}
+
 void initScene(int argc, char *argv[])
 {
   // load the image from a jpeg disk file to main memory
@@ -280,43 +291,25 @@ void initScene(int argc, char *argv[])
 
   for(unsigned int i = 0; i < width; i++) {
       for(unsigned int j =0; j < heightOfImage; j++) {
-        //   cout << scale *heightmapImage->getPixel(i,j,0) << endl;
-          float currHeight = (scale * (float)heightmapImage->getPixel(i,j,0))/255.0;
-        //   cout << heightmapImage->getPixel(i,j,0)/255.0 << endl;
-          //one vertex
-        //   cout << " J: " << j << " -j: " << j*-1.0;
-          position.push_back((float)i);
-          position.push_back((float)currHeight);
-          position.push_back((float)j*-1.0);
-          vecs.push_back(glm::vec3(i, currHeight, j*-1));
-        //   cout << vecs.size() << endl;
-
-          //color
-          color.push_back((float)heightmapImage->getPixel(i,j,0)/255.0);
-          color.push_back((float)heightmapImage->getPixel(i,j,0)/255.0);
-          color.push_back((float)heightmapImage->getPixel(i,j,0)/255.0);
-          color.push_back(1.0f);
-          clrs.push_back(glm::vec4(heightmapImage->getPixel(i,j,0)/255.0,(heightmapImage->getPixel(i,j,0)/255.0),heightmapImage->getPixel(i,j,0)/255.0,1));
-
+        float currHeight = (scale * (float)heightmapImage->getPixel(i,j,0))/255.0;
+        //   position.push_back((float)i);
+        //   position.push_back((float)currHeight);
+        //   position.push_back((float)j*-1.0);
+        //   //color
+        //   color.push_back((float)heightmapImage->getPixel(i,j,0)/255.0);
+        //   color.push_back((float)heightmapImage->getPixel(i,j,0)/255.0);
+        //   color.push_back((float)heightmapImage->getPixel(i,j,0)/255.0);
+        //   color.push_back(1.0f);
+        addToVector(position,color, i, j);
       }
   }
+  cout << endl;
+  for(unsigned int i = 0; i < position.size(); i++) {
+    cout << "i:" << position[i++] << " ";
+    cout << "height: " << position[i++] << " ";
+    cout << "j:" <<  position[i] << endl;
+  }
   cout << endl <<sizeof(glm::vec3) << " " << position.size() << " " << sizeof(float)<< endl;
-//   glm::vec3 triangle[3] = {
-//     glm::vec3(0, 0, 0), 
-//     glm::vec3(0, 1, 0),
-//     glm::vec3(1, 0, 0)
-//   };
-
-//   glm::vec4 color[3] = {
-//     {0, 0, 1, 1},
-//     {1, 0, 0, 1},
-//     {0, 1, 0, 1},
-//   };
-
-//   glGenBuffers(1, &triVertexBuffer);
-//   glBindBuffer(GL_ARRAY_BUFFER, triVertexBuffer);
-//   glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * 3, triangle,
-//                GL_STATIC_DRAW);
 
 //mine
 glGenBuffers(1, &vVertexBuffer);
