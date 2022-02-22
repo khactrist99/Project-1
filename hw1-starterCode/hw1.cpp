@@ -45,19 +45,28 @@ CONTROL_STATE controlState = ROTATE;
 float landRotate[3] = { 0.0f, 0.0f, 0.0f };
 float landTranslate[3] = { 0.0f, 0.0f, 0.0f };
 float landScale[3] = { 1.0f, 1.0f, 1.0f };
-float scale = 25; // my global variable
+float scale = 0.2; // my global variable
+int mode = 1;
 
 int windowWidth = 1280;
 int windowHeight = 720;
-int width, heightOfImage;
+int imgWidth, imgHeight;
 char windowTitle[512] = "CSCI 420 homework I";
 
 ImageIO * heightmapImage;
 
 GLuint triVertexBuffer, triColorVertexBuffer;
 GLuint triVertexArray;
-GLuint vVertexBuffer, vColorVertexBuffer; //mine
-GLuint vVertexArray;//mine
+GLuint pointsVertexBuffer, pointsColorVertexBuffer; //mine
+GLuint pointsVertexArray;//mine
+GLuint linesVertexBuffer, linesColorVertexBuffer; //mine
+GLuint linesVertexArray;//mine
+// GLuint pointsVertexBuffer, pointsColorVertexBuffer; //mine
+// GLuint pointsVertexArray;//mine
+// GLuint pointsVertexBuffer, pointsColorVertexBuffer; //mine
+// GLuint pointsVertexArray;//mine
+int nargc;
+char **nargv;
 int sizeTri;
 
 OpenGLMatrix matrix;
@@ -85,7 +94,7 @@ void displayFunc()
 
   matrix.SetMatrixMode(OpenGLMatrix::ModelView);
   matrix.LoadIdentity();
-  matrix.LookAt(width/2.0, 300, -128, width/2.0, 0, -1.0*(width/2.0), 0, 0, -1);
+  matrix.LookAt(imgWidth/2.0, 300, -1.0f*(float)(imgHeight/2.0f), imgWidth/2.0, 0, -1.0f*(float)(imgHeight/2.0f), 0, 0, -1);
   matrix.Translate(landTranslate[0],landTranslate[1], landTranslate[2]);
   matrix.Rotate(landRotate[0], 1,0,0);
   matrix.Rotate(landRotate[1], 0,1,0);
@@ -108,8 +117,13 @@ void displayFunc()
   pipelineProgram->SetModelViewMatrix(m);
   pipelineProgram->SetProjectionMatrix(p);
 
-  glBindVertexArray(vVertexArray);
-  glDrawArrays(GL_POINTS, 0, width*heightOfImage);
+    if(mode == 1) {
+        glBindVertexArray(pointsVertexArray);
+        glDrawArrays(GL_POINTS, 0, imgWidth*imgHeight);
+    } else if(mode == 2) {
+        glBindVertexArray(linesVertexArray);
+        glDrawArrays(GL_LINES, 0, 2*imgWidth*(imgHeight-1) + 2*(imgWidth-1)*imgHeight);
+    }
 
   glutSwapBuffers();
 }
@@ -249,7 +263,26 @@ void keyboardFunc(unsigned char key, int x, int y)
   switch (key)
   {
     
-      
+    case '1':
+        mode = 1;
+        // initScene(nargc, nargv);
+    break;
+
+    case '2':
+        mode = 2;
+        //initScene(nargc, nargv);
+    break;
+    
+    case '3':
+        mode = 3;
+        //initScene(nargc, nargv);
+    break;
+    
+    case '4':
+        mode = 4;
+        //initScene(nargc, nargv);
+    break;
+
     case 27: // ESC key
       exit(0); // exit the program
     break;
@@ -265,6 +298,17 @@ void keyboardFunc(unsigned char key, int x, int y)
   }
 }
 
+void addToVector(vector<float>& position, vector<float>& color, int i, int j) {
+    position.push_back((float)i);
+    position.push_back((float)(scale * (float)heightmapImage->getPixel(i,j,0)));
+    position.push_back(-1.0f*(float)j);
+    //color
+    color.push_back((float)heightmapImage->getPixel(i,j,0)/255.0f);
+    color.push_back((float)heightmapImage->getPixel(i,j,0)/255.0f);
+    color.push_back((float)heightmapImage->getPixel(i,j,0)/255.0f);
+    color.push_back(1.0f);
+}
+
 void initScene(int argc, char *argv[])
 {
   // load the image from a jpeg disk file to main memory
@@ -277,80 +321,97 @@ void initScene(int argc, char *argv[])
   }
 
   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
- 
+    
     // modify the following code accordingly
     vector<float> position, color;
-    width = heightmapImage->getWidth();
-    heightOfImage = heightmapImage->getHeight();
-    cout << sizeof(heightmapImage->getPixels()) << " width:" << width << " height: " << heightOfImage;
+    vector<float> lineVertices, lineColors;
+    imgWidth = heightmapImage->getWidth();
+    imgHeight = heightmapImage->getHeight();
 
-    for(int i = 0; i < width; i++) {
-        for(int j =0; j < heightOfImage; j++) {
-            float currHeight = scale * (float)heightmapImage->getPixel(i,j,0)/255.0;
-            cout << currHeight << endl;
-            //vertex
-            position.push_back((float)i);
-            position.push_back((float)currHeight);
-            position.push_back(-1.0*(float)j);
-            //color
-            color.push_back((float)heightmapImage->getPixel(i,j,0)/255.0);
-            color.push_back((float)heightmapImage->getPixel(i,j,0)/255.0);
-            color.push_back((float)heightmapImage->getPixel(i,j,0)/255.0);
-            color.push_back(1.0f);
-      }
-  }
-  cout << endl <<sizeof(glm::vec3) << " " << position.size() << " " << sizeof(float)<< endl;
-//   glm::vec3 triangle[3] = {
-//     glm::vec3(0, 0, 0), 
-//     glm::vec3(0, 1, 0),
-//     glm::vec3(1, 0, 0)
-//   };
+    //points
+    for(int i = 0; i < imgHeight; i++) {
+        for(int j =0; j < imgWidth; j++) {
+            // //vertex
+            // position.push_back((float)i);
+            // position.push_back((float)currHeight);
+            // position.push_back(-1.0*(float)j);
+            // //color
+            // color.push_back((float)heightmapImage->getPixel(i,j,0)/255.0);
+            // color.push_back((float)heightmapImage->getPixel(i,j,0)/255.0);
+            // color.push_back((float)heightmapImage->getPixel(i,j,0)/255.0);
+            // color.push_back(1.0f);
+            addToVector(position, color, i, j);
+        }
+    }
 
-//   glm::vec4 color[3] = {
-//     {0, 0, 1, 1},
-//     {1, 0, 0, 1},
-//     {0, 1, 0, 1},
-//   };
+    //LINES VERTICES
+    for(int i = 0; i < imgHeight; i++) {
+        for(int j = 0; j < imgWidth; j++) {
+            if(j <imgWidth-1) {
+            addToVector(lineVertices, lineColors, j+1, i);
+            addToVector(lineVertices, lineColors, j, i);
+            }
+            if(i <imgHeight-1) {
+            addToVector(lineVertices, lineColors, j, i);
+            addToVector(lineVertices, lineColors, j, i+1);
+            }
+        }
+    }
+    // for(int i = 0; i < imgWidth; i++) {
+    //     for(int j = 0; j < imgHeight-1; j++) {
+    //         addToVector(lineVertices, lineColors, i+1, j);
+    //         addToVector(lineVertices, lineColors, i, j);
+    //     }
+    // }
+    cout << "VERTeX SISZ: " << lineVertices.size() << " " << imgWidth << endl;
 
-//   glGenBuffers(1, &triVertexBuffer);
-//   glBindBuffer(GL_ARRAY_BUFFER, triVertexBuffer);
-//   glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * 3, triangle,
-//                GL_STATIC_DRAW);
 
-//mine
-    glGenBuffers(1, &vVertexBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, vVertexBuffer);
+
+    
+    //POINTS VBO
+    glGenBuffers(1, &pointsVertexBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, pointsVertexBuffer);
     glBufferData(GL_ARRAY_BUFFER, sizeof(position[0]) * position.size(), &position[0], GL_STATIC_DRAW);
-// glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * vecs.size(), &vecs[0],            GL_STATIC_DRAW);
-
-//   glGenBuffers(1, &triColorVertexBuffer);
-//   glBindBuffer(GL_ARRAY_BUFFER, triColorVertexBuffer);
-//   glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec4) * 3, color, GL_STATIC_DRAW);
-
-//mine
-    glGenBuffers(1, &vColorVertexBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, vColorVertexBuffer);
+    //POINTS color buffer
+    glGenBuffers(1, &pointsColorVertexBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, pointsColorVertexBuffer);
     glBufferData(GL_ARRAY_BUFFER, sizeof(color[0]) * color.size(), &color[0], GL_STATIC_DRAW);
+
+    //lines VBOS
+    glGenBuffers(1, &linesVertexBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, linesVertexBuffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(lineVertices[0]) * lineVertices.size(), &lineVertices[0], GL_STATIC_DRAW);
+    //lines color buffer
+    glGenBuffers(1, &linesColorVertexBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, linesColorVertexBuffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(lineColors[0]) * lineColors.size(), &lineColors[0], GL_STATIC_DRAW);
   
     pipelineProgram = new BasicPipelineProgram;
     int ret = pipelineProgram->Init(shaderBasePath);
     if (ret != 0) abort();
 
-//   glGenVertexArrays(1, &triVertexArray);
-//   glBindVertexArray(triVertexArray);
-//   glBindBuffer(GL_ARRAY_BUFFER, triVertexBuffer);
-
-//my vao
-    glGenVertexArrays(1, &vVertexArray);
-    glBindVertexArray(vVertexArray);
-    glBindBuffer(GL_ARRAY_BUFFER, vVertexBuffer);
-
-    GLuint loc =
-      glGetAttribLocation(pipelineProgram->GetProgramHandle(), "position");
+    //my vao for points
+    glGenVertexArrays(1, &pointsVertexArray);
+    glBindVertexArray(pointsVertexArray);
+    glBindBuffer(GL_ARRAY_BUFFER, pointsVertexBuffer);
+    GLuint loc = glGetAttribLocation(pipelineProgram->GetProgramHandle(), "position");
     glEnableVertexAttribArray(loc);
     glVertexAttribPointer(loc, 3, GL_FLOAT, GL_FALSE, 0, (const void *)0);
+    glBindBuffer(GL_ARRAY_BUFFER, pointsColorVertexBuffer);
+    loc = glGetAttribLocation(pipelineProgram->GetProgramHandle(), "color");
+    glEnableVertexAttribArray(loc);
+    glVertexAttribPointer(loc, 4, GL_FLOAT, GL_FALSE, 0, (const void *)0);
 
-    glBindBuffer(GL_ARRAY_BUFFER, vColorVertexBuffer);
+/* 
+        LINESSSSSSSSS
+*/
+    glGenVertexArrays(1, &linesVertexArray);
+    glBindVertexArray(linesVertexArray);
+    glBindBuffer(GL_ARRAY_BUFFER, linesVertexBuffer);
+    loc = glGetAttribLocation(pipelineProgram->GetProgramHandle(), "position");
+    glEnableVertexAttribArray(loc);
+    glVertexAttribPointer(loc, 3, GL_FLOAT, GL_FALSE, 0, (const void *)0);
+    glBindBuffer(GL_ARRAY_BUFFER, linesColorVertexBuffer);
     loc = glGetAttribLocation(pipelineProgram->GetProgramHandle(), "color");
     glEnableVertexAttribArray(loc);
     glVertexAttribPointer(loc, 4, GL_FLOAT, GL_FALSE, 0, (const void *)0);
@@ -425,6 +486,9 @@ int main(int argc, char *argv[])
 
   // do initialization
   initScene(argc, argv);
+
+  nargc = argc;
+  nargv = argv;
 
   // sink forever into the glut loop
   glutMainLoop();
