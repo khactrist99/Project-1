@@ -55,30 +55,34 @@ char windowTitle[512] = "CSCI 420 homework I";
 
 ImageIO * heightmapImage;
 
+//VBOs and their VAOs
 GLuint triVertexBuffer, triColorVertexBuffer;
 GLuint triVertexArray;
-GLuint pointsVertexBuffer, pointsColorVertexBuffer; //mine
-GLuint pointsVertexArray;//mine
-GLuint linesVertexBuffer, linesColorVertexBuffer; //mine
-GLuint linesVertexArray;//mine
-GLuint trianglesVertexBuffer, trianglesColorVertexBuffer; //mine
+GLuint pointsVertexBuffer, pointsColorVertexBuffer; 
+GLuint pointsVertexArray;
+GLuint linesVertexBuffer, linesColorVertexBuffer; 
+GLuint linesVertexArray;
+GLuint wireFrameVertexBuffer, wireFrameColorVertexBuffer; 
+GLuint wireFrameVertexArray;
+GLuint trianglesVertexBuffer, trianglesColorVertexBuffer; 
 GLuint sTrianglesVertexBuffer, sTrianglesColorVertexBuffer;
-GLuint trianglesVertexArray;//mine
+GLuint trianglesVertexArray;
 GLuint sTrianglesVertexArray;
-GLuint leftTrianglesVertexBuffer, leftTrianglesColorVertexBuffer; //mine
-GLuint rightTrianglesVertexBuffer, rightTrianglesColorVertexBuffer; //mine
-GLuint upTrianglesVertexBuffer, upTrianglesColorVertexBuffer; //mine
-GLuint downTrianglesVertexBuffer, downTrianglesColorVertexBuffer; //mine
+GLuint leftTrianglesVertexBuffer, leftTrianglesColorVertexBuffer; 
+GLuint rightTrianglesVertexBuffer, rightTrianglesColorVertexBuffer; 
+GLuint upTrianglesVertexBuffer, upTrianglesColorVertexBuffer; 
+GLuint downTrianglesVertexBuffer, downTrianglesColorVertexBuffer; 
+
 vector<float> leftTrianglesVertices, leftTriangleColors;
 vector<float> rightTrianglesVertices, rightTriangleColors;
 vector<float> upTrianglesVertices, upTriangleColors;
 vector<float> downTrianglesVertices, downTriangleColors;
+vector<float> wireFrameVertices, wireFrameColors;
 
-// GLuint pointsVertexBuffer, pointsColorVertexBuffer; //mine
-// GLuint pointsVertexArray;//mine
-int nargc;
-char **nargv;
-int sizeTri;
+
+int hundreds = 0, tens = 0, ones = 0;
+int stall = 0;
+
 
 OpenGLMatrix matrix;
 BasicPipelineProgram * pipelineProgram;
@@ -105,7 +109,7 @@ void displayFunc()
 
   matrix.SetMatrixMode(OpenGLMatrix::ModelView);
   matrix.LoadIdentity();
-  matrix.LookAt(imgWidth/2.0, 300, -1.0f*(float)(imgHeight/2.0f), imgWidth/2.0, 0, -1.0f*(float)(imgHeight/2.0f), 0, 0, -1);
+  matrix.LookAt(imgHeight/2.0f, 300, -1.0f*(float)(imgHeight/2.0f), imgWidth/2.0f, 0, -1.0f*(float)(imgHeight/2.0f), 0, 0, -1);
   matrix.Translate(landTranslate[0],landTranslate[1], landTranslate[2]);
   matrix.Rotate(landRotate[0], 1,0,0);
   matrix.Rotate(landRotate[1], 0,1,0);
@@ -120,7 +124,7 @@ void displayFunc()
   float p[16];
   matrix.SetMatrixMode(OpenGLMatrix::Projection);
   matrix.GetMatrix(p);
-  //
+  
   // bind shader
   pipelineProgram->Bind();
 
@@ -128,28 +132,55 @@ void displayFunc()
   pipelineProgram->SetModelViewMatrix(m);
   pipelineProgram->SetProjectionMatrix(p);
 
-    if(mode == 1) {
+    if(mode == 1) { //POINTS
         glBindVertexArray(pointsVertexArray);
         glDrawArrays(GL_POINTS, 0, imgWidth*imgHeight);
-    } else if(mode == 2) {
+    } else if(mode == 2) { //LINES
         glBindVertexArray(linesVertexArray);
         glDrawArrays(GL_LINES, 0, 2*imgWidth*(imgHeight-1) + 2*(imgWidth-1)*imgHeight);
-    } else if(mode == 3) {
+    } else if(mode == 3) { //TRIANGLES
         glBindVertexArray(trianglesVertexArray);
         glDrawArrays(GL_TRIANGLES, 0, 6*(imgWidth-1)*(imgHeight-1));
-    } else if(mode == 4) {
+    } else if(mode == 4) { //SMOOTHING
         glBindVertexArray(sTrianglesVertexArray);
         glDrawArrays(GL_TRIANGLES, 0, 6*(imgWidth-1)*(imgHeight-1));
+    } else if(mode == 5) { //WIREFRAME
+        glBindVertexArray(wireFrameVertexArray);
+        glDrawArrays(GL_LINES, 0, wireFrameVertices.size()/3);
+        glPolygonOffset(1.0f,1.0f);
+        glBindVertexArray(trianglesVertexArray);
+        glDrawArrays(GL_TRIANGLES, 0, 6*(imgWidth-1)*(imgHeight-1));
     }
-
-
   glutSwapBuffers();
 }
 
 void idleFunc()
-{
+{   
+   stall++;
   // do some stuff... 
-
+  //Makes the screenshots
+  if(stall > 0) {
+        if(ones > 9) {
+            ones = 0;
+            tens++;
+        }
+        if(tens > 9) {
+            tens = 0;
+            hundreds++;
+        }
+        if(hundreds < 3) {
+            string s = "images/" + to_string(hundreds) + to_string(tens)+ to_string(ones++) + ".jpg";
+            char char_array[s.length() + 1];
+            strcpy(char_array, s.c_str());
+            // saveScreenshot(char_array);
+        }
+        if(hundreds == 3 && tens == 0 && ones == 0) {
+            string s = "images/" + to_string(hundreds) + to_string(tens)+ to_string(ones++) + ".jpg";
+            char char_array[s.length() + 1];
+            strcpy(char_array, s.c_str());
+            // saveScreenshot(char_array);
+        }
+  }
   // for example, here, you can save the screenshots to disk (to make the animation)
     // saveScreenshot("temp.jpg");
   // make the screen update 
@@ -163,7 +194,7 @@ void reshapeFunc(int w, int h)
   matrix.SetMatrixMode(OpenGLMatrix::Projection);
   matrix.LoadIdentity();
   matrix.Perspective(60.0f, (float)w / (float)h, 0.01f, 1000.0f);
-  matrix.SetMatrixMode(OpenGLMatrix::ModelView);//me
+  matrix.SetMatrixMode(OpenGLMatrix::ModelView);//GOOD PRACTICE
 }
 
 void mouseMotionDragFunc(int x, int y)
@@ -236,12 +267,14 @@ void mouseMotionFunc(int x, int y)
 
 int keyUpPressed = 0;
 
+//WHEN UP KEY IS PRESSED
 void specialFunc(int key, int x, int y)
 {
     if (key == GLUT_KEY_UP)
         keyUpPressed = 1;
 }
 
+//WHEN UP KEY IS REALSED
 void ReleaseSpecialKeys(int key, int x, int y)
 {
     if (key == GLUT_KEY_UP) {
@@ -297,27 +330,37 @@ void keyboardFunc(unsigned char key, int x, int y)
   switch (key)
   {
     
+    //points
     case '1':
         mode = 1;
-        glUniform1ui(loc, 0);
+        glUniform1ui(loc, 0); //use made vertex shader mode with uniform value
     break;
 
+    //lines
     case '2':
         mode = 2;
         glUniform1i(loc, 0);
     break;
     
+    //triangles
     case '3':
         mode = 3;
         glUniform1i(loc, 0);
     break;
     
+    //smoothened triangles
     case '4':
         mode = 4;
-        glUniform1i(loc, num);
+        glUniform1i(loc, num); //set uniform value to mode =1 for written vertex shader
     break;
 
-    //ADD to readme
+    //WIREFRAME MODE
+    case '5':
+        mode = 5;
+        glUniform1i(loc, 0);
+    break;
+
+    //TRANSLATE,
     case 't':
       controlState = TRANSLATE;
     break;
@@ -338,13 +381,66 @@ void keyboardFunc(unsigned char key, int x, int y)
 }
 
 void addToVector(vector<float>& position, vector<float>& color, int i, int j) {
+    int chanel0=0, chanel1=0,chanel2=0;
+    float height0=0, height1=0,height2=0;
+    int bytesP = 0;
+     //ADDS COLOR IF THE CHANEL HAS RGB VALUE
+    if(heightmapImage->getBytesPerPixel() == 3) {
+        chanel0 = 0;
+        chanel1 = 1;
+        chanel2 = 2;
+        height0=(float)(scale * (float)heightmapImage->getPixel(i,j,0));
+        height1=(float)(scale * (float)heightmapImage->getPixel(i,j,1));
+        height2=(float)(scale * (float)heightmapImage->getPixel(i,j,2));
+        bytesP = 1;
+    }
+    //adds vertices to vector
     position.push_back((float)i);
-    position.push_back((float)(scale * (float)heightmapImage->getPixel(i,j,0)));
+    //height off a color image or grey scale
+    if(bytesP == 0) {
+        position.push_back((float)(scale * (float)heightmapImage->getPixel(i,j,0)));
+    } else {
+        position.push_back((height0 + height1 + height2)/3);
+    }
     position.push_back(-1.0f*(float)j);
-    //color
-    color.push_back((float)heightmapImage->getPixel(i,j,0)/255.0f);
-    color.push_back((float)heightmapImage->getPixel(i,j,0)/255.0f);
-    color.push_back((float)heightmapImage->getPixel(i,j,0)/255.0f);
+
+   
+   
+    //color points based on if the picture has color or not
+    color.push_back((float)heightmapImage->getPixel(i,j,chanel0)/255.0f);
+    color.push_back((float)heightmapImage->getPixel(i,j,chanel1)/255.0f);
+    color.push_back((float)heightmapImage->getPixel(i,j,chanel2)/255.0f);
+    color.push_back(1.0f);
+}
+
+//Same as function above other than constant color
+void addToVectorWireFrame(vector<float>& position, vector<float>& color, int i, int j) {
+    int chanel0=0, chanel1=0,chanel2=0;
+    float height0=0, height1=0,height2=0;
+    int bytesP = 0;
+     //ADDS COLOR IF THE CHANEL HAS RGB VALUE
+    if(heightmapImage->getBytesPerPixel() == 3) {
+        chanel0 = 0;
+        chanel1 = 1;
+        chanel2 = 2;
+        height0=(float)(scale * (float)heightmapImage->getPixel(i,j,0));
+        height1=(float)(scale * (float)heightmapImage->getPixel(i,j,1));
+        height2=(float)(scale * (float)heightmapImage->getPixel(i,j,2));
+        bytesP = 1;
+    }
+    
+    position.push_back((float)i);
+    //height off a color image or grey scale
+    if(bytesP == 0) {
+        position.push_back((float)(scale * (float)heightmapImage->getPixel(i,j,0)));
+    } else {
+        position.push_back((height0 + height1 + height2)/3);
+    }
+    position.push_back(-1.0f*(float)j);
+    //
+    color.push_back(0.4f);
+    color.push_back(0.0f);
+    color.push_back(0.2f);
     color.push_back(1.0f);
 }
 
@@ -363,15 +459,15 @@ void getNeighbors(int i, int j) {
     }
     //up vertex
     if(j > 0) {
-        addToVector(upTrianglesVertices, upTriangleColors, i, j-1);
+        addToVector(downTrianglesVertices, downTriangleColors, i, j-1);
     } else {
-        addToVector(upTrianglesVertices, upTriangleColors, i, j);
+        addToVector(downTrianglesVertices, downTriangleColors, i, j);
     }
     //down vertex
     if(j < (imgHeight-1)) {
-        addToVector(downTrianglesVertices, downTriangleColors, i, j+1);
+        addToVector(upTrianglesVertices, upTriangleColors, i, j+1);
     } else {
-        addToVector(downTrianglesVertices, downTriangleColors, i, j);
+        addToVector(upTrianglesVertices, upTriangleColors, i, j);
     }
 
 }
@@ -386,7 +482,7 @@ void initScene(int argc, char *argv[])
     exit(EXIT_FAILURE);
   }
 
-  glClearColor(0.08f, 0.0f, 0.0f, 0.0f);
+  glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     
     // modify the following code accordingly
     vector<float> position, color;
@@ -421,10 +517,11 @@ void initScene(int argc, char *argv[])
    //TRIANGLE VERTICES
    for(int i = 0; i < imgWidth-1; i++) {
         for(int j = 0; j < imgHeight-1; j++) {
+            //triangle 1
             addToVector(trianglesVertices, triangleColors, i, j);
             addToVector(trianglesVertices, triangleColors, i+1, j);
             addToVector(trianglesVertices, triangleColors, i+1, j+1);
-
+            //triangle 2    
             addToVector(trianglesVertices, triangleColors, i, j);
             addToVector(trianglesVertices, triangleColors, i, j+1);
             addToVector(trianglesVertices, triangleColors, i+1, j+1);
@@ -432,7 +529,8 @@ void initScene(int argc, char *argv[])
    }
     //SMOOTHING VERTICES
     for(int i = 0; i < imgHeight-1; i++) {
-        for(int j = 0; j < imgWidth-1; j++) {
+        for(int j = 0; j < imgWidth-1; j++) { 
+            //triangle 1 with neighbors
             addToVector(sTrianglesVertices, sTriangleColors, i, j);
             getNeighbors(i,j);
             addToVector(sTrianglesVertices, sTriangleColors, i+1, j);
@@ -440,6 +538,7 @@ void initScene(int argc, char *argv[])
             addToVector(sTrianglesVertices, sTriangleColors, i+1, j+1);
             getNeighbors(i+1,j+1);
 
+            //triangle 2 with neighbors
             addToVector(sTrianglesVertices, sTriangleColors, i, j);
             getNeighbors(i,j);
             addToVector(sTrianglesVertices, sTriangleColors, i, j+1);
@@ -448,6 +547,20 @@ void initScene(int argc, char *argv[])
             getNeighbors(i+1,j+1);
         }
    }
+
+   //WIREFRAME VERTICES
+   for(int i = 0; i < imgHeight; i++) {
+        for(int j = 0; j < imgWidth; j++) {
+            if(j <imgWidth-1) {
+                addToVectorWireFrame(wireFrameVertices, wireFrameColors, j+1, i);
+                addToVectorWireFrame(wireFrameVertices, wireFrameColors, j, i);
+            }
+            if(i <imgHeight-1) {
+                addToVectorWireFrame(wireFrameVertices, wireFrameColors, j, i);
+                addToVectorWireFrame(wireFrameVertices, wireFrameColors, j, i+1);
+            }
+        }
+    }
    
     
     //POINTS VBO
@@ -468,6 +581,15 @@ void initScene(int argc, char *argv[])
     glBindBuffer(GL_ARRAY_BUFFER, linesColorVertexBuffer);
     glBufferData(GL_ARRAY_BUFFER, sizeof(lineColors[0]) * lineColors.size(), &lineColors[0], GL_STATIC_DRAW);
 
+    //lwireFrame VBOS
+    glGenBuffers(1, &wireFrameVertexBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, wireFrameVertexBuffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(wireFrameVertices[0]) * wireFrameVertices.size(), &wireFrameVertices[0], GL_STATIC_DRAW);
+    //wireFrame color buffer
+    glGenBuffers(1, &wireFrameColorVertexBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, wireFrameColorVertexBuffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(wireFrameColors[0]) * wireFrameColors.size(), &wireFrameColors[0], GL_STATIC_DRAW);
+
     //triangle VBOS
     glGenBuffers(1, &trianglesVertexBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, trianglesVertexBuffer);
@@ -485,7 +607,7 @@ void initScene(int argc, char *argv[])
     glGenBuffers(1, &sTrianglesColorVertexBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, sTrianglesColorVertexBuffer);
     glBufferData(GL_ARRAY_BUFFER, sizeof(sTriangleColors[0]) * sTriangleColors.size(), &sTriangleColors[0], GL_STATIC_DRAW);
-    //left
+    //smoothing VBOS left
     glGenBuffers(1, &leftTrianglesVertexBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, leftTrianglesVertexBuffer);
     glBufferData(GL_ARRAY_BUFFER, sizeof(leftTrianglesVertices[0]) * leftTrianglesVertices.size(), &leftTrianglesVertices[0], GL_STATIC_DRAW);
@@ -504,12 +626,15 @@ void initScene(int argc, char *argv[])
 
     
     
-  
+    //BUILDS PIPELINE
     pipelineProgram = new BasicPipelineProgram;
     int ret = pipelineProgram->Init(shaderBasePath);
     if (ret != 0) abort();
 
-    //my vao for points
+//This section binds vbos to VAO and sends variables to the shader
+/* 
+        POINTSSSS VAO 
+*/
     glGenVertexArrays(1, &pointsVertexArray);
     glBindVertexArray(pointsVertexArray);
     glBindBuffer(GL_ARRAY_BUFFER, pointsVertexBuffer);
@@ -522,7 +647,7 @@ void initScene(int argc, char *argv[])
     glVertexAttribPointer(loc, 4, GL_FLOAT, GL_FALSE, 0, (const void *)0);
 
 /* 
-        LINESSSSSSSSS
+        LINESSSSSSSSS VAO
 */
     glGenVertexArrays(1, &linesVertexArray);
     glBindVertexArray(linesVertexArray);
@@ -536,7 +661,22 @@ void initScene(int argc, char *argv[])
     glVertexAttribPointer(loc, 4, GL_FLOAT, GL_FALSE, 0, (const void *)0);
 
 /* 
-        TRIANGLESSSS
+        WIREFRAME VAO
+*/
+    glGenVertexArrays(1, &wireFrameVertexArray);
+    glBindVertexArray(wireFrameVertexArray);
+    glBindBuffer(GL_ARRAY_BUFFER, wireFrameVertexBuffer);
+    loc = glGetAttribLocation(pipelineProgram->GetProgramHandle(), "position");
+    glEnableVertexAttribArray(loc);
+    glVertexAttribPointer(loc, 3, GL_FLOAT, GL_FALSE, 0, (const void *)0);
+    glBindBuffer(GL_ARRAY_BUFFER, wireFrameColorVertexBuffer);
+    loc = glGetAttribLocation(pipelineProgram->GetProgramHandle(), "color");
+    glEnableVertexAttribArray(loc);
+    glVertexAttribPointer(loc, 4, GL_FLOAT, GL_FALSE, 0, (const void *)0);
+
+
+/* 
+        TRIANGLESSSS VAO
 */
     glGenVertexArrays(1, &trianglesVertexArray);
     glBindVertexArray(trianglesVertexArray);
@@ -550,7 +690,7 @@ void initScene(int argc, char *argv[])
     glVertexAttribPointer(loc, 4, GL_FLOAT, GL_FALSE, 0, (const void *)0);
 
 /* 
-        Smoothing
+        Smoothing VAO
 */
     glGenVertexArrays(1, &sTrianglesVertexArray);
     glBindVertexArray(sTrianglesVertexArray);
@@ -563,6 +703,7 @@ void initScene(int argc, char *argv[])
     glEnableVertexAttribArray(loc);
     glVertexAttribPointer(loc, 4, GL_FLOAT, GL_FALSE, 0, (const void *)0);
     
+    //Send to vertex shader
     // //left
     glBindBuffer(GL_ARRAY_BUFFER, leftTrianglesVertexBuffer);
     loc = glGetAttribLocation(pipelineProgram->GetProgramHandle(), "positionLeft");
@@ -584,9 +725,8 @@ void initScene(int argc, char *argv[])
     glEnableVertexAttribArray(loc);
     glVertexAttribPointer(loc, 3, GL_FLOAT, GL_FALSE, 0, (const void *)0);
 
-  glEnable(GL_DEPTH_TEST);
 
-  sizeTri = 3;
+  glEnable(GL_DEPTH_TEST);
 
   std::cout << "GL error: " << glGetError() << std::endl;
 }
@@ -657,9 +797,6 @@ int main(int argc, char *argv[])
 
   // do initialization
   initScene(argc, argv);
-
-  nargc = argc;
-  nargv = argv;
 
   // sink forever into the glut loop
   glutMainLoop();
