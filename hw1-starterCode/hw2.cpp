@@ -189,35 +189,35 @@ int loadSplines(char * argv)
     return 0;
 }
 
-int initTexture(const char * imageFilename, GLuint textureHandle)
+int initTexture(const char* imageFilename, GLuint textureHandle)
 {
-    // read the texture image
+    // Read the texture image.
     ImageIO img;
     ImageIO::fileFormatType imgFormat;
     ImageIO::errorType err = img.load(imageFilename, &imgFormat);
 
-    if (err != ImageIO::OK) 
+    if (err != ImageIO::OK)
     {
         printf("Loading texture from %s failed.\n", imageFilename);
         return -1;
     }
 
-    // check that the number of bytes is a multiple of 4
-    if (img.getWidth() * img.getBytesPerPixel() % 4) 
+    // Check that the number of bytes is a multiple of 4.
+    if (img.getWidth() * img.getBytesPerPixel() % 4)
     {
         printf("Error (%s): The width*numChannels in the loaded image must be a multiple of 4.\n", imageFilename);
         return -1;
     }
 
-    // allocate space for an array of pixels
+    // Allocate space for an array of pixels.
     int width = img.getWidth();
     int height = img.getHeight();
-    unsigned char * pixelsRGBA = new unsigned char[4 * width * height]; // we will use 4 bytes per pixel, i.e., RGBA
+    unsigned char* pixelsRGBA = new unsigned char[4 * width * height]; // we will use 4 bytes per pixel, i.e., RGBA
 
-    // fill the pixelsRGBA array with the image pixels
+    // Fill the pixelsRGBA array with the image pixels.
     memset(pixelsRGBA, 0, 4 * width * height); // set all bytes to 0
     for (int h = 0; h < height; h++)
-        for (int w = 0; w < width; w++) 
+        for (int w = 0; w < width; w++)
         {
             // assign some default byte values (for the case where img.getBytesPerPixel() < 4)
             pixelsRGBA[4 * (h * width + w) + 0] = 0; // red
@@ -231,37 +231,37 @@ int initTexture(const char * imageFilename, GLuint textureHandle)
                 pixelsRGBA[4 * (h * width + w) + c] = img.getPixel(w, h, c);
         }
 
-    // bind the texture
+    // Bind the texture.
     glBindTexture(GL_TEXTURE_2D, textureHandle);
 
-    // initialize the texture
+    // Initialize the texture.
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixelsRGBA);
 
-    // generate the mipmaps for this texture
+    // Generate the mipmaps for this texture.
     glGenerateMipmap(GL_TEXTURE_2D);
 
-    // set the texture parameters
+    // Set the texture parameters.
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    // query support for anisotropic texture filtering
+    // Query support for anisotropic texture filtering.
     GLfloat fLargest;
     glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &fLargest);
     printf("Max available anisotropic samples: %f\n", fLargest);
-    // set anisotropic texture filtering
+    // Set anisotropic texture filtering.
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 0.5f * fLargest);
 
-    // query for any errors
+    // Query for any errors.
     GLenum errCode = glGetError();
-    if (errCode != 0) 
+    if (errCode != 0)
     {
         printf("Texture initialization error. Error code: %d.\n", errCode);
         return -1;
     }
-    
-    // de-allocate the pixel array -- it is no longer needed
-    delete [] pixelsRGBA;
+
+    // De-allocate the pixel array -- it is no longer needed.
+    delete[] pixelsRGBA;
 
     return 0;
 }
@@ -916,7 +916,7 @@ void initScene(int argc, char *argv[])
 {
     glClearColor(0.56f, 0.871f, 1.0f, 0.0f);
     glEnable(GL_DEPTH_TEST);
-
+        
     // Setup data
     loadSplineData(argc, argv);
     getData();
