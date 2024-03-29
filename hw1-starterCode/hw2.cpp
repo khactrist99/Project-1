@@ -38,7 +38,7 @@ using namespace std;
 // Represents a control point & vector
 struct Point
 {
-    double x, y, z;
+    float x, y, z;
 
     // default constructor
     Point() { x = y = z = 0.0f; }
@@ -82,14 +82,12 @@ struct Point
     }
 };
 
-struct Spline 
+// Contains the control points of the spline.
+struct Spline
 {
     int numControlPoints;
-    Point * points;
-};
-
-Spline * splines;
-int numSplines;
+    Point* points;
+} spline;
 
 int mousePos[2]; // x,y coordinate of the mouse position
 int leftMouseButton = 0; // 1 if pressed, 0 if not 
@@ -134,59 +132,34 @@ Point currentT, currentN, currentB;
 
 int frame = -1; // frame # for screenshots
 
-int loadSplines(char * argv) 
+void loadSpline(char* argv)
 {
-    char * cName = (char *) malloc(128 * sizeof(char));
-    FILE * fileList;
-    FILE * fileSpline;
-    int iType, i = 0, j, iLength;
-
-    // load the track file 
-    fileList = fopen(argv, "r");
-    if (fileList == NULL) 
+    FILE* fileSpline = fopen(argv, "r");
+    if (fileSpline == NULL)
     {
-        printf ("can't open file\n");
+        printf("Cannot open file %s.\n", argv);
         exit(1);
     }
-    
-    // stores the number of splines in a global variable 
-    fscanf(fileList, "%d", &numSplines);
 
-    splines = (Spline*) malloc(numSplines * sizeof(Spline));
+    // Read the number of spline control points.
+    fscanf(fileSpline, "%d\n", &spline.numControlPoints);
+    printf("Detected %d control points.\n", spline.numControlPoints);
 
-    // reads through the spline files 
-    for (j = 0; j < numSplines; j++) 
+    // Allocate memory.
+    spline.points = (Point*)malloc(spline.numControlPoints * sizeof(Point));
+    // Load the control points.
+    for (int i = 0; i < spline.numControlPoints; i++)
     {
-        i = 0;
-        fscanf(fileList, "%s", cName);
-        fileSpline = fopen(cName, "r");
-
-        if (fileSpline == NULL) 
+        if (fscanf(fileSpline, "%f %f %f",
+            &spline.points[i].x,
+            &spline.points[i].y,
+            &spline.points[i].z) != 3)
         {
-            printf ("can't open file\n");
+            printf("Error: incorrect number of control points in file %s.\n", argv);
             exit(1);
         }
-
-        // gets length for spline file
-        fscanf(fileSpline, "%d %d", &iLength, &iType);
-
-        // allocate memory for all the points
-        splines[j].points = (Point *)malloc(iLength * sizeof(Point));
-        splines[j].numControlPoints = iLength;
-
-        // saves the data to the struct
-        while (fscanf(fileSpline, "%lf %lf %lf", 
-         &splines[j].points[i].x, 
-         &splines[j].points[i].y, 
-         &splines[j].points[i].z) != EOF) 
-        {
-            i++;
-        }
+        cout << spline.points[i].x << spline.points[i].y << spline.points[i].z << endl;
     }
-
-    free(cName);
-
-    return 0;
 }
 
 int initTexture(const char* imageFilename, GLuint textureHandle)
@@ -291,9 +264,8 @@ void setTextureUnit(GLint unit)
     glUniform1i(h_textureImage, unit - GL_TEXTURE0);
 }
 
-/*
- * Camera setting
- */
+
+//Camera setting
 void setView()
 {
     //openGLMatrix.LookAt(0, 0, 100, 0, 0, 0, 0, 1, 0); // Fixed camera
@@ -302,9 +274,6 @@ void setView()
                         upVectors.at(trackIdx).x, upVectors.at(trackIdx).y, upVectors.at(trackIdx).z);
 }
 
-/*
- * Set transformation
- */
 void setTransform()
 {
     // Transformation
@@ -711,10 +680,10 @@ void setTNB(float u, int sCtrlPoint)
     try
     {
         // Get 4 control points
-        p1 = splines[0].points[sCtrlPoint];
-        p2 = splines[0].points[sCtrlPoint+1];
-        p3 = splines[0].points[sCtrlPoint+2];
-        p4 = splines[0].points[sCtrlPoint+3];
+        p1 = spline.points[sCtrlPoint];
+        p2 = spline.points[sCtrlPoint+1];
+        p3 = spline.points[sCtrlPoint+2];
+        p4 = spline.points[sCtrlPoint+3];
 
         // Set tangent
         currentT = matCalc(2, u, 0.5f, p1, p2, p3, p4).unit();
@@ -785,7 +754,7 @@ void addTriangles(float u, int sCtrlPoint)
     float interval = 1.0f;//0.3f;
 
     // Get starting point
-    p0 = matCalc(1, u, 0.5f, splines[0].points[sCtrlPoint], splines[0].points[sCtrlPoint+1], splines[0].points[sCtrlPoint+2], splines[0].points[sCtrlPoint+3]);
+    p0 = matCalc(1, u, 0.5f, spline.points[sCtrlPoint], spline.points[sCtrlPoint+1], spline.points[sCtrlPoint+2], spline.points[sCtrlPoint+3]);
     setTNB(u, sCtrlPoint);
     setCameraPosition(p0.add(currentB.mult(0.5f * interval)));
 
@@ -810,7 +779,7 @@ void addTriangles(float u, int sCtrlPoint)
     v11_2 = getPoint(p0.add(currentB.mult(interval)), scale, currentN.neg(), currentB.mult(0.5f).neg());
 
     // Get ending point
-    p1 = matCalc(1, u+0.01f, 0.5f, splines[0].points[sCtrlPoint], splines[0].points[sCtrlPoint+1], splines[0].points[sCtrlPoint+2], splines[0].points[sCtrlPoint+3]);
+    p1 = matCalc(1, u+0.01f, 0.5f, spline.points[sCtrlPoint], spline.points[sCtrlPoint+1], spline.points[sCtrlPoint+2], spline.points[sCtrlPoint+3]);
     setTNB(u+0.01f, sCtrlPoint);
 
     v4 = getPoint(p1, scale, Point(), currentB);
@@ -874,7 +843,7 @@ void addTriangles(float u, int sCtrlPoint)
 void getData()
 {
     // Roller coaster mesh /////////////////////////////////////////////////////////////
-    for (int sCtrlPoint = 0; sCtrlPoint < splines[0].numControlPoints - 3; sCtrlPoint++)
+    for (int sCtrlPoint = 0; sCtrlPoint < spline.numControlPoints - 3; sCtrlPoint++)
     {
         for (float u = 0.0f; u <= 1.0f; u += 0.01f)
             addTriangles(u, sCtrlPoint);
@@ -904,21 +873,15 @@ void getData()
     uvs.push_back(scale); uvs.push_back(scale);
 }
 
-void loadSplineData(int argc, char *argv[])
-{
-    loadSplines(argv[1]);
-    printf("Loaded %d spline(s).\n", numSplines);
-    for(int i=0; i<numSplines; i++)
-        printf("Num control points in spline %d: %d.\n", i, splines[i].numControlPoints);
-}
-
 void initScene(int argc, char *argv[])
 {
     glClearColor(0.56f, 0.871f, 1.0f, 0.0f);
     glEnable(GL_DEPTH_TEST);
         
     // Setup data
-    loadSplineData(argc, argv);
+    // Load spline from the provided filename.
+    loadSpline(argv[1]);
+    printf("Loaded spline with %d control point(s).\n", spline.numControlPoints);
     getData();
 
     // Basic Shader ////////////////////////////////////////////////////////////////////////////
